@@ -11,6 +11,43 @@ using namespace std;
 //     int xOffset, yOffset; // offset from cursor/baseline to top-left of bitmap
 // };
 
+/*
+
+Generator font input:
+
+A
+01110
+10001
+10001
+11111
+10001
+10001
+10001__________________ baseline;y=0
+
+
+generator font output:
+
+    RAW BITMAP:
+    01110100|01100011|11111000|11000110|00100000
+
+    const uint8_t bitmap[4] = {0x74, 0x63, 0xf8, 0xc6, 0x20};
+    const Glyph glyphs[1] = {{0, 5, 5, 7, 0, -7}};
+
+    {5, 5, 7, 0, -7} =>
+                byteAddr = 0;
+                xAdvance = 5;
+                w = 5;
+                h = 7;
+                xOffset = 0;
+                yOffset = -7;
+
+    const int bitmap_length = 5; // length of bitmap table
+    const int glyphs_length = 1; // length of glyphs table
+
+
+
+*/
+
 void writeBitmapValue(std::ofstream &o, string &binary);
 
 int main()
@@ -48,51 +85,7 @@ int main()
     string buff;
     while (getline(in, line))
     {
-
-        if (line.empty())
-        {
-            // new character
-            newc = true;
-
-            number_of_glyphs++;
-            /*saving!!*/
-
-           // bitmap << buff;
-            writeBitmapValue(bitmap, buff);
-
-            buff = "";
-            h = w = 0;
-
-            continue;
-        }
-        if (newc)
-        {
-            newc = false;
-            glyphs << line[0] << ";\n";
-
-            continue;
-        }
-
-        int cut_l, cut_r;
-        for (size_t i = line.length() - 1; i >= 0 ; i--)
-        {
-            if(line[i] == '1')
-            {
-                cut_r = i+1;
-                break;
-            }
-        }
-        for (size_t i = 0; i < line.length(); i++)
-        {
-            if(line[i] == '1')
-            {
-                cut_l = i;
-                break;
-            }
-        }
-        buff += line.substr(cut_l, line.length() - (line.length() - cut_r) - cut_l);
-
-        h++;
+        
     }
 
     bitmap << " };\n";
