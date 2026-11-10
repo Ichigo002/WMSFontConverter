@@ -78,76 +78,86 @@ int main()
         return -2;
     }
 
-    bitmap << "const uint_8t bitmap[] = { ";
-    glyphs << "const Glyph glyphs[] = { ";
+    bitmap << "const uint8_t bitmap[] = {\n    ";
+    glyphs << "const Glyph glyphs[] = {\n    ";
 
     int w = 0, h = 0;
+    int maxh = 0;
     int number_of_glyphs = 0;
     int number_of_bytes = 0;
-    
+
     int xOffset = 0;
     bool first_loop = true;
 
     string line;
     string buff = "";
+    char which;
     while (getline(in, line))
     {
         if (line.length() == 1 || line == "END") // Start of reading character.
         {
-            if(first_loop)
+
+            if (first_loop)
             {
                 first_loop = false;
                 continue;
             }
 
-            if(number_of_bytes != 0)
-                bitmap << ", ";
+            if (number_of_bytes != 0)
+                bitmap << ", \n    ";
 
             int bytes = writeBytesToBitmap(bitmap, buff);
+
             number_of_bytes += bytes;
 
-            if(xOffset == 0)
+            if (xOffset == 0)
             {
                 cerr << "Invalid format: xOffset = 0. Not found baseline of character. \nAppend '=' at the end of line which is baseline";
                 return -4;
             }
 
-            if(buff.length() != w * h)
+            if (buff.length() != w * h)
             {
-                cerr << "Invlid format: w0 != w1. Rows has different lengths.";
+                cerr << "Invlid format: w0 != w1. Rows has different lengths.\n character: '" << which << "'";
                 return -3;
             }
 
-            if(number_of_glyphs != 0)
-                glyphs << ", ";
+            if (number_of_glyphs != 0)
+                glyphs << ", \n    ";
 
             writeGlyph(glyphs, number_of_bytes - bytes, w, h, xOffset);
 
+            if (xOffset < maxh)
+                maxh = xOffset;
+
+            which = line[0];
             h = w = xOffset = 0;
             buff = "";
             number_of_glyphs++;
             continue;
         }
 
-        if(w == 0)
-            w = line.length();
-
-        if(line[line.length()-1] == '=')
+        if (line[line.length() - 1] == '=')
         {
             line.pop_back();
             xOffset = -h - 1;
         }
+
+        if (w == 0)
+            w = line.length();
+
         buff += line;
         h++;
     }
 
     bitmap << std::dec;
     bitmap << " };\n";
-    bitmap << "int bitmap_size = " << number_of_bytes << ";";
+    bitmap << "const int bitmap_size = " << number_of_bytes << ";";
     bitmap.close();
 
     glyphs << "};\n";
-    glyphs << "int glyph_size = " << number_of_glyphs << ";";
+    glyphs << "const int glyph_size = " << number_of_glyphs << ";\n";
+    glyphs << "const int max_Yoffset = " << maxh << ";\n";
     glyphs.close();
 
     return 0;
