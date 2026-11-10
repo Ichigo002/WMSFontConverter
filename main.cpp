@@ -100,7 +100,6 @@ int main()
                 continue;
             }
 
-
             if(number_of_bytes != 0)
                 bitmap << ", ";
 
@@ -142,12 +141,13 @@ int main()
         h++;
     }
 
+    bitmap << std::dec;
     bitmap << " };\n";
-    bitmap << "size_t bitmap_size = " << number_of_bytes << ";";
+    bitmap << "int bitmap_size = " << number_of_bytes << ";";
     bitmap.close();
 
     glyphs << "};\n";
-    glyphs << "size_t glyph_size = " << number_of_glyphs << ";";
+    glyphs << "int glyph_size = " << number_of_glyphs << ";";
     glyphs.close();
 
     return 0;
