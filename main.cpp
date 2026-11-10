@@ -1,14 +1,13 @@
 #include <iostream>
 #include <fstream>
-#include <vector>
+#include <math.h>
 
 using namespace std;
 
 // struct Glyph
 // {
-//     uint16_t xAdvance; // cursor move after drawing (width+spacing)
 //     uint8_t w, h; // width and height of glyph
-//     int xOffset, yOffset; // offset from cursor/baseline to top-left of bitmap
+//     int yOffset; // offset from cursor/baseline to top-left of bitmap
 // };
 
 /*
@@ -35,10 +34,8 @@ generator font output:
 
     {5, 5, 7, 0, -7} =>
                 byteAddr = 0;
-                xAdvance = 5;
                 w = 5;
                 h = 7;
-                xOffset = 0;
                 yOffset = -7;
 
     const int bitmap_length = 5; // length of bitmap table
@@ -48,7 +45,15 @@ generator font output:
 
 */
 
+// returns: number of bytes which binary taken
+int writeBytesToBitmap(std::ofstream &o, string &binary);
+
 void writeBitmapValue(std::ofstream &o, string &binary);
+
+void writeGlyph(std::ofstream &o, int byteAddr, int w, int h, int xOffset)
+{
+    o << "{ " << byteAddr << ", " << w << ", " << h << ", " << xOffset << "}";
+}
 
 int main()
 {
@@ -79,13 +84,62 @@ int main()
     int w = 0, h = 0;
     int number_of_glyphs = 0;
     int number_of_bytes = 0;
-    bool newc = true;
+    
+    int xOffset = 0;
+    bool first_loop = true;
 
     string line;
-    string buff;
+    string buff = "";
     while (getline(in, line))
     {
-        
+        if (line.length() == 1 || line == "END") // Start of reading character.
+        {
+            if(first_loop)
+            {
+                first_loop = false;
+                continue;
+            }
+
+
+            if(number_of_bytes != 0)
+                bitmap << ", ";
+
+            int bytes = writeBytesToBitmap(bitmap, buff);
+            number_of_bytes += bytes;
+
+            if(xOffset == 0)
+            {
+                cerr << "Invalid format: xOffset = 0. Not found baseline of character. \nAppend '=' at the end of line which is baseline";
+                return -4;
+            }
+
+            if(buff.length() != w * h)
+            {
+                cerr << "Invlid format: w0 != w1. Rows has different lengths.";
+                return -3;
+            }
+
+            if(number_of_glyphs != 0)
+                glyphs << ", ";
+
+            writeGlyph(glyphs, number_of_bytes - bytes, w, h, xOffset);
+
+            h = w = xOffset = 0;
+            buff = "";
+            number_of_glyphs++;
+            continue;
+        }
+
+        if(w == 0)
+            w = line.length();
+
+        if(line[line.length()-1] == '=')
+        {
+            line.pop_back();
+            xOffset = -h - 1;
+        }
+        buff += line;
+        h++;
     }
 
     bitmap << " };\n";
@@ -97,6 +151,33 @@ int main()
     glyphs.close();
 
     return 0;
+}
+
+int writeBytesToBitmap(std::ofstream &o, string &binary)
+{
+    int s = ceil(binary.length() / 8.0f);
+
+    string buff = "";
+    for (size_t i = 0; i < s; i++)
+    {
+        buff = binary.substr(i * 8, 8);
+
+        if (buff.length() < 8)
+        {
+            int t = 8 - buff.length();
+            for (size_t j = 0; j < t; j++)
+            {
+                buff += '0';
+            }
+        }
+
+        if (i != 0)
+            o << ", ";
+
+        writeBitmapValue(o, buff);
+    }
+
+    return s;
 }
 
 void writeBitmapValue(std::ofstream &o, string &binary)
